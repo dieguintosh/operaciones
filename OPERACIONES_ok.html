@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operaciones</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #f0ece3;
+      font-family: 'Courier New', Courier, monospace;
+      color: black;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #header {
+      text-align: center;
+      padding: 18px;
+      border-bottom: 2px solid black;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .btn {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.1rem;
+      font-weight: bold;
+      letter-spacing: 0.15em;
+      background: #f0ece3;
+      color: black;
+      border: 2px solid black;
+      padding: 8px 36px;
+      cursor: pointer;
+    }
+
+    .btn:hover { background: black; color: #f0ece3; }
+
+    #grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+
+    .cuadrante {
+      border: 1px solid black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .operacion {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .fila { display: flex; align-items: center; gap: 12px; }
+    .simbolo { min-width: 1.5rem; text-align: right; }
+    .numero { text-align: right; font-size: 2rem; font-weight: 700; }
+
+    .resultado {
+      color: #c0392b;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .linea {
+      width: 100%;
+      border-top: 2px solid black;
+      margin: 6px 0;
+    }
+
+    .division-wrapper {
+      display: flex;
+      align-items: flex-start;
+      font-size: 2rem;
+      font-weight: 700;
+      gap: 0;
+    }
+
+    .dividendo { padding-right: 8px; }
+
+    .divisor-box {
+      border-left: 2px solid black;
+      border-bottom: 2px solid black;
+      padding: 0 10px 4px 10px;
+    }
+
+    .div-resultado {
+      margin-top: 10px;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #c0392b;
+      text-align: left;
+    }
+
+    /* Modal */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    #modal-overlay.visible { display: flex; }
+
+    #modal {
+      background: #f0ece3;
+      border: 2px solid black;
+      padding: 36px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 320px;
+      text-align: center;
+    }
+
+    #modal p { font-size: 1rem; line-height: 1.5; }
+
+    #modal input {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border: 2px solid black;
+      background: white;
+      padding: 8px 12px;
+      text-align: center;
+      letter-spacing: 0.2em;
+      outline: none;
+    }
+
+    #modal-error {
+      color: #c0392b;
+      font-size: 0.9rem;
+      min-height: 1.2em;
+    }
+
+    #modal-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <button class="btn" onclick="generar()">RECARGAR</button>
+  <button class="btn" onclick="abrirModal()">VER RESULTADOS</button>
+</div>
+
+<div id="grid">
+  <div class="cuadrante" id="suma"></div>
+  <div class="cuadrante" id="resta"></div>
+  <div class="cuadrante" id="multi"></div>
+  <div class="cuadrante" id="division"></div>
+</div>
+
+<!-- Modal contraseña -->
+<div id="modal-overlay">
+  <div id="modal">
+    <p>Si quieres ver los resultados,<br>introduce la contraseña:</p>
+    <input type="password" id="input-clave" placeholder="••••" maxlength="10"
+      onkeydown="if(event.key==='Enter') comprobar()">
+    <div id="modal-error"></div>
+    <div id="modal-buttons">
+      <button class="btn" onclick="comprobar()">ACEPTAR</button>
+      <button class="btn" onclick="cerrarModal()">CANCELAR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let datos = {};
+
+  function aleatorio(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function numCifras(n) {
+    return aleatorio(Math.pow(10, n - 1), Math.pow(10, n) - 1);
+  }
+
+  function numEntre(minC, maxC) {
+    return numCifras(aleatorio(minC, maxC));
+  }
+
+  function generar() {
+    const a = numEntre(5, 7);
+    const b = numEntre(5, 7);
+    datos.suma = { a, b };
+
+    let r1 = numEntre(5, 7);
+    let r2 = numEntre(5, 7);
+    if (r2 > r1) [r1, r2] = [r2, r1];
+    datos.resta = { r1, r2 };
+
+    const m1 = numEntre(5, 7);
+    const m2 = numCifras(2);
+    datos.multi = { m1, m2 };
+
+    const divisor = numCifras(2);
+    const dividendo = numCifras(3);
+    datos.div = {
+      dividendo, divisor,
+      cociente: Math.floor(dividendo / divisor),
+      resto: dividendo % divisor
+    };
+
+    mostrar(false);
+  }
+
+  function mostrar(conResultados) {
+    const { a, b } = datos.suma;
+    document.getElementById('suma').innerHTML = `
+      <div class="operacion">
+        <div class="fila"><span class="simbolo"></span><span class="numero">${a}</span></div>
+        <div class="fila"><span class="simbolo">+</span><span class="numero">${b}</span></div>
+        <div class="linea"></div>
+        ${conResultados ? `<div class="fila"><span class="simbolo"></span><span class="resultado">${a + b}</span></div>` : ''}
+      </div>`;
+
+    const { r1, r2 } = datos.resta;
+    document.getElementById('resta').innerHTML = `
+      <div class="operacion">
+        <div class="fila"><span class="simbolo"></span><span class="numero">${r1}</span></div>
+        <div class="fila"><span class="simbolo">−</span><span class="numero">${r2}</span></div>
+        <div class="linea"></div>
+        ${conResultados ? `<div class="fila"><span class="simbolo"></span><span class="resultado">${r1 - r2}</span></div>` : ''}
+      </div>`;
+
+    const { m1, m2 } = datos.multi;
+    document.getElementById('multi').innerHTML = `
+      <div class="operacion">
+        <div class="fila"><span class="simbolo"></span><span class="numero">${m1}</span></div>
+        <div class="fila"><span class="simbolo">×</span><span class="numero">${m2}</span></div>
+        <div class="linea"></div>
+        ${conResultados ? `<div class="fila"><span class="simbolo"></span><span class="resultado">${m1 * m2}</span></div>` : ''}
+      </div>`;
+
+    const { dividendo, divisor, cociente, resto } = datos.div;
+    document.getElementById('division').innerHTML = `
+      <div style="display:flex; flex-direction:column; align-items:flex-start;">
+        <div class="division-wrapper">
+          <span class="dividendo">${dividendo}</span>
+          <div class="divisor-box">${divisor}</div>
+        </div>
+        ${conResultados ? `<div class="div-resultado">Cociente: ${cociente} &nbsp;&nbsp; Resto: ${resto}</div>` : ''}
+      </div>`;
+  }
+
+  function abrirModal() {
+    document.getElementById('input-clave').value = '';
+    document.getElementById('modal-error').textContent = '';
+    document.getElementById('modal-overlay').classList.add('visible');
+    setTimeout(() => document.getElementById('input-clave').focus(), 100);
+  }
+
+  function cerrarModal() {
+    document.getElementById('modal-overlay').classList.remove('visible');
+  }
+
+  function comprobar() {
+    const clave = document.getElementById('input-clave').value;
+    if (clave === 'ALEX') {
+      cerrarModal();
+      mostrar(true);
+    } else {
+      document.getElementById('modal-error').textContent = 'Contraseña incorrecta. Inténtalo de nuevo.';
+      document.getElementById('input-clave').value = '';
+      document.getElementById('input-clave').focus();
+    }
+  }
+
+  generar();
+</script>
+
+</body>
+</html>
